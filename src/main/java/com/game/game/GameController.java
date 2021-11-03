@@ -21,12 +21,11 @@ public class GameController {
      * @throws InterruptedException wait between request
      */
     void gameReplLoop() throws InterruptedException {
-        registerHook();
-
         System.out.println("Enter your name: ");
         String userName = sc.nextLine();
 
         getInitialGame(userName);
+        registerHook();
 
         String mark = asignMarkToPlayer(game);
         System.out.printf("You are playing mark '%s'\n", mark);
@@ -38,8 +37,10 @@ public class GameController {
 
             if (!(game.isWin() || game.isOver())) {
                 printStateOfGame(game);
-                inputNextMove(mark);
-                printStateOfGame(game);
+                boolean madeMove = inputNextMove(mark);
+                if (!madeMove)
+                    System.out.println("Could not place mark in selected column, please select another column: ");
+                else printStateOfGame(game);
             }
         }
 
@@ -47,7 +48,7 @@ public class GameController {
             System.out.println("The game has been won by: " + game.getPlayerWin());
         }
         if (game.isOver()) {
-            System.out.println("The game is over - the other player disconected.");
+            System.out.println("The game is over - the other player disconnected.");
         }
     }
 
@@ -59,7 +60,7 @@ public class GameController {
      * @param userName inputed username by the user
      */
     private void getInitialGame(String userName) {
-        ResponseEntity<String> response = restTemplate.getForEntity(host + "/game/new?userName=" + userName, String.class);
+        ResponseEntity<String> response = restTemplate.getForEntity(String.format("%s/game/new?userName=%s", host, userName), String.class);
         game = gson.fromJson(response.getBody(), GameEntity.class);
     }
 
@@ -68,17 +69,24 @@ public class GameController {
      * update the game with move
      *
      * @param mark X/Y the mark with which the user plays
+     * @return
      */
-    private void inputNextMove(String mark) {
+    private boolean inputNextMove(String mark) {
         System.out.println("Place your next move(1-9): ");
+
         int nextMoveIndex = sc.nextInt() - 1;
         while (nextMoveIndex < 0 || nextMoveIndex > 8) {
             System.out.println("Your input is not in the range (1-9), please try again: ");
             nextMoveIndex = sc.nextInt() - 1;
         }
 
-        ResponseEntity<String> response = restTemplate.postForEntity(host + "/game/" + game.getId() + "/" + nextMoveIndex + "/" + mark, null, String.class);
-        game = gson.fromJson(response.getBody(), GameEntity.class);
+        try {
+            ResponseEntity<String> response = restTemplate.postForEntity(String.format("%s/game/%d/%d/%s", host, game.getId(), nextMoveIndex, mark), null, String.class);
+            game = gson.fromJson(response.getBody(), GameEntity.class);
+        } catch (RuntimeException e) {
+            return false;
+        }
+        return true;
     }
 
     /**
@@ -90,12 +98,11 @@ public class GameController {
     private void waitForOurTurn(String userName) throws InterruptedException {
         if (!game.getTurn().equals(userName)) System.out.println("Waiting for the other player to place mark...");
         while (!game.getTurn().equals(userName)) {
-            Thread.sleep(1000);
+            Thread.sleep(300);
 
-            ResponseEntity<String> response = restTemplate.getForEntity(host + "/game/" + game.getId(), String.class);
+            ResponseEntity<String> response = restTemplate.getForEntity(String.format("%s/game/%d", host, game.getId()), String.class);
             game = gson.fromJson(response.getBody(), GameEntity.class);
 
-            /* We check if game was won by other player */
             if (game.isWin() || game.isOver()) break;
         }
     }
@@ -120,10 +127,10 @@ public class GameController {
     private void waitForOtherPlayer(GameEntity game) throws InterruptedException {
         if (game.getPlayer2() == null) System.out.println("Waiting for the second player to join...");
         while (game.getPlayer2() == null) {
-            ResponseEntity<String> response = restTemplate.getForEntity(host + "/game/" + game.getId(), String.class);
+            ResponseEntity<String> response = restTemplate.getForEntity(String.format("%s/game/%d", host, game.getId()), String.class);
             game = gson.fromJson(response.getBody(), GameEntity.class);
 
-            Thread.sleep(1000);
+            Thread.sleep(300);
         }
     }
 
@@ -133,6 +140,8 @@ public class GameController {
      * @param game game entity
      */
     private void printStateOfGame(GameEntity game) {
+        if (game.isWin() || game.isOver()) return;
+
         for (int i = 0; i < n; i++) {
             for (int j = 0; j < n; j++)
                 System.out.print(game.getState().charAt(i * n + j) + " ");
@@ -147,7 +156,7 @@ public class GameController {
     void registerHook() {
         Thread printingHook = new Thread(() -> {
             game.setOver(true);
-            restTemplate.postForEntity(host + "/game/over/" + game.getId(), null, String.class);
+            restTemplate.postForEntity(String.format("%s/game/%d/over", host, game.getId()), null, String.class);
         });
         Runtime.getRuntime().addShutdownHook(printingHook);
     }
