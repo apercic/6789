@@ -10,6 +10,7 @@ class GameEntity {
     private String turn;
 
     private boolean win;
+    private String playerWin;
     private boolean over;
 
     private String player1;
