@@ -9,15 +9,16 @@ import org.springframework.web.client.RestTemplate;
 
 import java.io.IOException;
 import java.util.Properties;
+import java.util.Random;
 import java.util.Scanner;
 
 public class GameController {
     Resource resource = new ClassPathResource("/application.properties");
     Properties props = PropertiesLoaderUtils.loadProperties(resource);
 
-    private String host = props.getProperty("base.url");
-    int columns = Integer.parseInt(props.getProperty("grid.size.columns"));
-    int rows = Integer.parseInt(props.getProperty("grid.size.columns"));
+    private final String host = props.getProperty("base.url");
+    private final int columns = Integer.parseInt(props.getProperty("grid.size.columns"));
+    private final int rows = Integer.parseInt(props.getProperty("grid.size.rows"));
 
     Gson gson = new Gson();
     RestTemplate restTemplate = new RestTemplate();
@@ -34,7 +35,8 @@ public class GameController {
      */
     void gameReplLoop() throws InterruptedException {
         System.out.println("Enter your name: ");
-        String userName = sc.nextLine();
+        String userName = sc.nextLine() + new Random().nextLong();
+        System.out.println("Your game id is: " + userName);
 
         getInitialGame(userName);
         registerHook();
@@ -58,8 +60,7 @@ public class GameController {
 
         if (game.isWin()) {
             System.out.println("The game has been won by: " + game.getPlayerWin());
-        }
-        if (game.isOver()) {
+        } else if (game.isOver()) {
             System.out.println("The game is over - the other player disconnected.");
         }
     }
@@ -81,7 +82,7 @@ public class GameController {
      * update the game with move
      *
      * @param mark X/Y the mark with which the user plays
-     * @return
+     * @return true if we could place mark/false if not
      */
     private boolean inputNextMove(String mark) {
         System.out.println("Place your next move(1-9): ");
