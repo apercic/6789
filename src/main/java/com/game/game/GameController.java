@@ -1,19 +1,31 @@
 package com.game.game;
 
 import com.google.gson.Gson;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.support.PropertiesLoaderUtils;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
 
+import java.io.IOException;
+import java.util.Properties;
 import java.util.Scanner;
 
 public class GameController {
-    private String host = "http://localhost:8080";
-    int n = 5; //size of grid = n*n
+    Resource resource = new ClassPathResource("/application.properties");
+    Properties props = PropertiesLoaderUtils.loadProperties(resource);
+
+    private String host = props.getProperty("base.url");
+    int columns = Integer.parseInt(props.getProperty("grid.size.columns"));
+    int rows = Integer.parseInt(props.getProperty("grid.size.columns"));
 
     Gson gson = new Gson();
     RestTemplate restTemplate = new RestTemplate();
     Scanner sc = new Scanner(System.in);
     GameEntity game;
+
+    public GameController() throws IOException {
+    }
 
     /**
      * Main REPL loop for interacting with user
@@ -142,9 +154,9 @@ public class GameController {
     private void printStateOfGame(GameEntity game) {
         if (game.isWin() || game.isOver()) return;
 
-        for (int i = 0; i < n; i++) {
-            for (int j = 0; j < n; j++)
-                System.out.print(game.getState().charAt(i * n + j) + " ");
+        for (int i = 0; i < rows; i++) {
+            for (int j = 0; j < columns; j++)
+                System.out.print(game.getState().charAt(i * columns + j) + " ");
             System.out.println();
         }
         System.out.println();
