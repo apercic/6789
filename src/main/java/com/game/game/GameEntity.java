@@ -1,11 +1,16 @@
 package com.game.game;
 
+import lombok.Data;
+
+@Data
 class GameEntity {
 
     private Long id;
-    private byte[] state;
+    private String state;
     private String turn;
-    private Boolean win;
+
+    private boolean win;
+    private boolean over;
 
     private String player1;
     private String player2;
