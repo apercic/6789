@@ -87,6 +87,11 @@ public class GameController {
     private boolean inputNextMove(String mark) {
         System.out.println("Place your next move(1-9): ");
 
+        while (!sc.hasNextInt()) {
+            System.out.println("Your input is not a number, please try again: ");
+            sc.next();
+        }
+
         int nextMoveIndex = sc.nextInt() - 1;
         while (nextMoveIndex < 0 || nextMoveIndex > 8) {
             System.out.println("Your input is not in the range (1-9), please try again: ");
