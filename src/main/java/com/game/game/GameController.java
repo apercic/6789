@@ -127,7 +127,7 @@ public class GameController {
      * @param game game entity
      * @return X or Y
      */
-    private String asignMarkToPlayer(GameEntity game) {
+    public String asignMarkToPlayer(GameEntity game) {
         return game.getPlayer2() == null ? "X" : "Y";
     }
 
